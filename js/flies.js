@@ -2,28 +2,25 @@ var sizeFly = 25
 var delayTime = 1000;
 var updateTime = 500;
 
-var width = 800
-var height = 600
+var width = window.innerWidth
+var height = window.innerHeight
 
 
 
 var rand = d3.randomUniform(-2, 2)
 var randPosX = d3.randomUniform(0, width)
 var randPosY = d3.randomUniform(0, height)
-var flightDuration = d3.randomInt(500, 1000)
+var flightDuration = d3.randomInt(1000, 2000)
 var flyWaitTime = d3.randomInt(0, 5000)
 var randFly = d3.randomInt(0, 10)
+var randRotation = d3.randomUniform(-1, 1)
 
 var fliesPosition = Array(10).fill(null).map((_) => ({ 'x': Math.random() * width, 'y': Math.random() * height }));
 var fliesStates = Array(10).fill("idle")
 
-var help = false;
+var help = false;           // true flyes ask help
+var keyPressed = false      // true when 'x' is pressed
 
-d3.json("data/dataset.json")
-    .then((d) => data = d)
-    .catch(function (error) {
-        // error
-    })
 
 function shakeFly(flyN) {
     if (fliesStates[flyN] == "idle") {
@@ -62,7 +59,7 @@ function moveFly(flyN) {
 function drawChar(c) {
     console.log("Configurazione: " + c)
 
-    fliesPosition = JSON.parse(JSON.stringify(data[c])) // deep copy
+    fliesPosition = JSON.parse(JSON.stringify(data.get(c))) // deep copy
     fliesStates.fill('help')
 
     flies.data(fliesPosition)
@@ -73,7 +70,7 @@ function drawChar(c) {
         .ease(d3.easeLinear)
         .on("end", function () {
             fliesStates.fill('idle')
-        })
+        });
 }
 
 function askHelp() {
@@ -98,35 +95,6 @@ var svg = d3.select("body")
     .attr("height", height)
     .attr("style", "background-color:lightskyblue");
 
-var flies = svg.selectAll("image")         // change with real fly
-    .data(fliesPosition)
-    .enter()
-    .append("image")
-    .attr("x", (d) => d.x)
-    .attr("y", (d) => d.y)
-    .attr("height", sizeFly)
-    .attr("width", sizeFly)
-    .attr("href", "data/fly.png")
-    .attr("id", (_, i) => i)
-    .on('mousedown', function () {
-        if (keyPressed && !help) {
-            help = true
-            askHelp()
-        }
-    });
-
-
-fliesPosition.forEach(function (_, i) {
-    setInterval(() => {if (!help) moveFly(i)}, flyWaitTime());
-})
-
-setInterval(function () {
-    fliesPosition.forEach((_, i) => shakeFly(i) )
-}, 20);
-
-
-var keyPressed = false
-
 d3.select("body")
     .on('keydown', function () {
         if (d3.event.keyCode == 88) {
@@ -140,3 +108,39 @@ d3.select("body")
             keyPressed = false
         }
     });
+
+d3.json("data/dataset.json")
+    .then(function (d) {
+
+        data = d3.map(d)            // global variable data contains flies configurations
+        data.each((d) => d.forEach((v, i, a) => (a[i] = { x: v.x * width, y: v.y * height })));
+
+        flies = svg.selectAll("image")      // create flies
+            .data(fliesPosition)
+            .enter()
+            .append("image")
+            .attr("x", (d) => d.x)
+            .attr("y", (d) => d.y)
+            .attr("height", sizeFly)
+            .attr("width", sizeFly)
+            .attr("href", "data/fly.png")
+            .attr("id", (_, i) => i)
+            .on('mousedown', function () {
+                if (keyPressed && !help) {
+                    help = true
+                    askHelp()
+                }
+            });
+
+        fliesPosition.forEach(function (_, i) {
+            setInterval(() => { if (!help) moveFly(i) }, flyWaitTime());
+        })
+
+        setInterval(function () {
+            fliesPosition.forEach((_, i) => shakeFly(i))
+        }, 20);
+
+    })
+    .catch(function (error) {
+        // error
+    })
