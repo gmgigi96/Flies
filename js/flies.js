@@ -17,7 +17,8 @@ var flyWaitTime = d3.randomInt(500, 5000)
 var randFly = d3.randomInt(0, 10)
 var randRotation = d3.randomUniform(-1, 1)
 
-var fliesPosition = Array(10).fill(null).map((_) => ({ 'x': Math.random() * width, 'y': Math.random() * height }));
+// var fliesPosition = Array(10).fill(null).map((_) => ({ 'x': Math.random() * width, 'y': Math.random() * height }));
+
 var fliesStates = Array(10).fill("idle")
 
 var help = false;           // true flyes ask help
@@ -187,8 +188,10 @@ d3.select("body")
 d3.json("data/dataset.json")
     .then(function (d) {
 
-        data = d3.map(d)            // global variable data contains flies configurations
+        data = d3.map(d)            // global variable data which contains flies configurations
         data.each((d) => d.forEach((v, i, a) => (a[i] = { x: v.x * width, y: v.y * height })));
+
+        fliesPosition = data.get("initial")
 
         flies = d3.select("svg")
             .selectAll("svg")
