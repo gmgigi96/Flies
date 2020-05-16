@@ -1,4 +1,6 @@
 var sizeFly = 40
+var targetSize = 60
+
 var delayTime = 750;               // time between 2 characters drawn by flies
 var updateTime = 300;               // time to draw a character
 
@@ -103,7 +105,6 @@ function drawChar(c) {
     console.log("Configurazione: " + c)
 
 
-
     nextPos = JSON.parse(JSON.stringify(data.get(c))) // deep copy
     fliesStates.fill('help')
 
@@ -169,14 +170,16 @@ var svg = d3.select("body")
 
 d3.select("body")
     .on('keydown', function () {
-        if (d3.event.keyCode == 88) {
+        if (d3.event.keyCode == 88 && !keyPressed) {
             // key 'x' pressed
+            target.attr("fill", "red")
             keyPressed = true
         }
     })
     .on('keyup', function () {
-        if (d3.event.keyCode == 88) {
+        if (d3.event.keyCode == 88 && keyPressed) {
             // key 'x' released
+            target.attr("fill", "black")
             keyPressed = false
         }
     });
@@ -226,6 +229,27 @@ d3.json("data/dataset.json")
         setInterval(function () {
             fliesPosition.forEach((_, i) => shakeFly(i))
         }, 20);
+
+        d3.xml("data/target.svg")
+            .then(data => {
+                svg.append("svg")
+                    .attr("class", "target")
+                    .attr("width", targetSize)
+                    .attr("height", targetSize)
+                    .node()
+                    .append(data.documentElement)
+                target = d3.select(".target")   // set global variable target
+            });
+
+        svg.on('mousemove', function () {
+            var mouse = d3.mouse(this)
+            var x = mouse[0]
+            var y = mouse[1]
+            // console.log(x + " " + y)
+
+            target.attr("x", x - targetSize / 2)
+                .attr("y", y - targetSize / 2)
+        });
 
     })
     .catch(function (error) {
