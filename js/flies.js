@@ -1,6 +1,6 @@
-var sizeFly = 25
-var delayTime = 1000;
-var updateTime = 500;
+var sizeFly = 40
+var delayTime = 750;               // time between 2 characters drawn by flies
+var updateTime = 300;               // time to draw a character
 
 var width = window.innerWidth
 var height = window.innerHeight
@@ -77,7 +77,7 @@ function askHelp() {
     const s = 'AIUTO';
     var i = 0;
 
-    const interval = setInterval(function () {
+    const interval = setInterval(function h() {
         if (i < s.length) {
             drawChar(s[i])
             i++
@@ -85,7 +85,8 @@ function askHelp() {
             help = false;
             clearInterval(interval)
         }
-    }, delayTime);
+        return h
+    }(), delayTime);
 
 }
 
@@ -123,7 +124,7 @@ d3.json("data/dataset.json")
             .attr("y", (d) => d.y)
             .attr("height", sizeFly)
             .attr("width", sizeFly)
-            .attr("href", "data/fly.png")
+            .attr("href", "data/fly.svg")
             .attr("id", (_, i) => i)
             .on('mousedown', function () {
                 if (keyPressed && !help) {
