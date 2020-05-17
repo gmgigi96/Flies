@@ -16,8 +16,6 @@ var randPosX = d3.randomUniform(0, width)
 var randPosY = d3.randomUniform(0, height)
 var flightDuration = 1400
 var flyWaitTime = d3.randomInt(flightDuration + 500, 5000)
-var randFly = d3.randomInt(0, 10)
-var randRotation = d3.randomUniform(-1, 1)
 
 // var fliesPosition = Array(10).fill(null).map((_) => ({ 'x': Math.random() * width, 'y': Math.random() * height }));
 
@@ -49,7 +47,7 @@ function angle(cx, cy, ex, ey) {
     return theta;
 }
 
-function moveFly(flyN, pos, time) {
+function moveFly(flyN, pos, time, considerHelp=true) {
 
     var f = fliesPosition[flyN];
     f.x = pos.x
@@ -70,36 +68,43 @@ function moveFly(flyN, pos, time) {
         .ease(d3.easeLinear)
         .on("end", function () {
 
-            fly.transition()
-                .duration(time - 2 * turnDuration)
-                .ease(d3.easeLinear)
-                .attrTween("transform", () => d3.interpolateString(
-                    `rotate(${a}, ${oldX + 20}, ${oldY + 20})`,
-                    `rotate(${a}, ${f.x + 20}, ${f.y + 20})`
-                ))
-                .select("svg")      // fly body 
-                .attr("x", f.x)
-                .attr("y", f.y)
-                .ease(d3.easeLinear)
-                .on("end", function () {
+            if (!considerHelp || considerHelp && !help) {
 
-                    var newX = parseFloat(body.attr("x"))
-                    var newY = parseFloat(body.attr("y"))
+                fly.transition()
+                    .duration(time - 2 * turnDuration)
+                    .ease(d3.easeLinear)
+                    .attrTween("transform", () => d3.interpolateString(
+                        `rotate(${a}, ${oldX + 20}, ${oldY + 20})`,
+                        `rotate(${a}, ${f.x + 20}, ${f.y + 20})`
+                    ))
+                    .select("svg")      // fly body 
+                    .attr("x", f.x)
+                    .attr("y", f.y)
+                    .ease(d3.easeLinear)
+                    .on("end", function () {
 
-                    fly.transition()
-                        .delay(100)
-                        .duration(turnDuration)
-                        .attrTween("transform", () => d3.interpolateString(
-                            `rotate(${a}, ${newX + 20}, ${newY + 20})`,
-                            `rotate(0, ${newX + 20}, ${newY + 20})`
-                        ))
-                        .ease(d3.easeLinear)
-                        .on("end", function () {
-                            fly.attr("transform", null)
-                            fliesStates[flyN] = "idle";
-                        })
+                        if (!considerHelp || considerHelp && !help) {
 
-                })
+                            var newX = parseFloat(body.attr("x"))
+                            var newY = parseFloat(body.attr("y"))
+
+                            fly.transition()
+                                .delay(100)
+                                .duration(turnDuration)
+                                .attrTween("transform", () => d3.interpolateString(
+                                    `rotate(${a}, ${newX + 20}, ${newY + 20})`,
+                                    `rotate(0, ${newX + 20}, ${newY + 20})`
+                                ))
+                                .ease(d3.easeLinear)
+                                .on("end", function () {
+                                    fly.attr("transform", null)
+                                    fliesStates[flyN] = "idle";
+                                })
+                        }
+
+                    })
+
+            }
 
         })
 
@@ -117,7 +122,7 @@ function drawChar(c) {
     fliesStates.fill('help')
 
     for (let i = 0; i < 10; i++) {
-        moveFly(i, nextPos[i], updateTime)
+        moveFly(i, nextPos[i], updateTime, false)
     }
 
 }
