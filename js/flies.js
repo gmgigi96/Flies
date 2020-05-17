@@ -3,7 +3,7 @@ const targetSize = 60
 
 const turnDuration = 200              // time to turn a fly to a target position
 
-const delayTime = 1000;               // time between 2 characters drawn by flies
+const delayTime = 800;               // time between 2 characters drawn by flies
 const updateTime = 600;               // time to draw a character (including turnDuration * 2)
 
 const width = window.innerWidth
@@ -20,6 +20,7 @@ var flyWaitTime = d3.randomInt(flightDuration + 500, 5000)
 // var fliesPosition = Array(10).fill(null).map((_) => ({ 'x': Math.random() * width, 'y': Math.random() * height }));
 
 var fliesStates = Array(10).fill("idle")
+var fliesAngles = Array(10).fill(0)
 
 var help = false;           // true flyes ask help
 var keyPressed = false      // true when 'x' is pressed
@@ -47,7 +48,7 @@ function angle(cx, cy, ex, ey) {
     return theta;
 }
 
-function moveFly(flyN, pos, time, considerHelp=true) {
+function moveFly(flyN, pos, time, considerHelp = true) {
 
     var f = fliesPosition[flyN];
     f.x = pos.x
@@ -64,9 +65,14 @@ function moveFly(flyN, pos, time, considerHelp=true) {
     fly.transition()
         .delay(100)
         .duration(turnDuration)
-        .attrTween("transform", () => d3.interpolateString(`rotate(0, ${oldX + 20}, ${oldY + 20})`, `rotate(${a}, ${oldX + 20}, ${oldY + 20})`))
+        .attrTween("transform", () => d3.interpolateString(
+            `rotate(${fliesAngles[flyN]}, ${oldX + 20}, ${oldY + 20})`,
+            `rotate(${a}, ${oldX + 20}, ${oldY + 20})`
+        ))
         .ease(d3.easeLinear)
         .on("end", function () {
+
+            fliesAngles[flyN] = a
 
             if (!considerHelp || considerHelp && !help) {
 
@@ -83,7 +89,10 @@ function moveFly(flyN, pos, time, considerHelp=true) {
                     .ease(d3.easeLinear)
                     .on("end", function () {
 
-                        if (!considerHelp || considerHelp && !help) {
+                        //fly.attr("transform", null)
+                        fliesStates[flyN] = "idle";
+
+                        if (!help) {
 
                             var newX = parseFloat(body.attr("x"))
                             var newY = parseFloat(body.attr("y"))
@@ -97,8 +106,7 @@ function moveFly(flyN, pos, time, considerHelp=true) {
                                 ))
                                 .ease(d3.easeLinear)
                                 .on("end", function () {
-                                    fly.attr("transform", null)
-                                    fliesStates[flyN] = "idle";
+
                                 })
                         }
 
@@ -199,17 +207,11 @@ d3.json("data/dataset.json")
                 d3.selectAll(".fly").select("svg").nodes().forEach(n => {
                     n.append(data.documentElement.cloneNode(true))
                 })
-                // d3.selectAll(".fly")
-                //     .select("svg")
-                //     .attr("width", sizeFly)
-                //     .attr("height", sizeFly)
-                //     .attr("transform", `translate(${sizeFly / 2}, ${sizeFly / 2})`)
             });
-
 
         fliesPosition.forEach(function (_, i) {
             setInterval(() => { if (!help) randomWalk(i) }, flyWaitTime());
-        }) // TODO: attivazione immediata
+        })
 
         setInterval(function () {
             fliesPosition.forEach((_, i) => shakeFly(i))
