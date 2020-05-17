@@ -1,19 +1,21 @@
-var sizeFly = 40
-var targetSize = 60
+const sizeFly = 40
+const targetSize = 60
 
-var delayTime = 750;               // time between 2 characters drawn by flies
-var updateTime = 300;               // time to draw a character
+const turnDuration = 200              // time to turn a fly to a target position
 
-var width = window.innerWidth
-var height = window.innerHeight
+const delayTime = 1000;               // time between 2 characters drawn by flies
+const updateTime = 600;               // time to draw a character (including turnDuration * 2)
+
+const width = window.innerWidth
+const height = window.innerHeight
 
 
 
 var rand = d3.randomUniform(-2, 2)
 var randPosX = d3.randomUniform(0, width)
 var randPosY = d3.randomUniform(0, height)
-var flightDuration = 1000
-var flyWaitTime = d3.randomInt(flightDuration + 100, 5000)
+var flightDuration = 1400
+var flyWaitTime = d3.randomInt(flightDuration + 500, 5000)
 var randFly = d3.randomInt(0, 10)
 var randRotation = d3.randomUniform(-1, 1)
 
@@ -47,7 +49,7 @@ function angle(cx, cy, ex, ey) {
     return theta;
 }
 
-function moveFly(flyN, pos) {
+function moveFly(flyN, pos, time) {
 
     var f = fliesPosition[flyN];
     f.x = pos.x
@@ -63,13 +65,13 @@ function moveFly(flyN, pos) {
 
     fly.transition()
         .delay(100)
-        .duration(200)
+        .duration(turnDuration)
         .attrTween("transform", () => d3.interpolateString(`rotate(0, ${oldX + 20}, ${oldY + 20})`, `rotate(${a}, ${oldX + 20}, ${oldY + 20})`))
         .ease(d3.easeLinear)
         .on("end", function () {
 
             fly.transition()
-                .duration(flightDuration)
+                .duration(time - 2 * turnDuration)
                 .ease(d3.easeLinear)
                 .attrTween("transform", () => d3.interpolateString(
                     `rotate(${a}, ${oldX + 20}, ${oldY + 20})`,
@@ -86,7 +88,7 @@ function moveFly(flyN, pos) {
 
                     fly.transition()
                         .delay(100)
-                        .duration(200)
+                        .duration(turnDuration)
                         .attrTween("transform", () => d3.interpolateString(
                             `rotate(${a}, ${newX + 20}, ${newY + 20})`,
                             `rotate(0, ${newX + 20}, ${newY + 20})`
@@ -104,8 +106,8 @@ function moveFly(flyN, pos) {
 }
 
 function randomWalk(flyN) {
-    var randPos = {x: randPosX(), y: randPosY()}
-    moveFly(flyN, randPos)
+    var randPos = { x: randPosX(), y: randPosY() }
+    moveFly(flyN, randPos, flightDuration)
 }
 
 function drawChar(c) {
@@ -114,9 +116,9 @@ function drawChar(c) {
     nextPos = JSON.parse(JSON.stringify(data.get(c))) // deep copy
     fliesStates.fill('help')
 
-    
-
-
+    for (let i = 0; i < 10; i++) {
+        moveFly(i, nextPos[i], updateTime)
+    }
 
 }
 
