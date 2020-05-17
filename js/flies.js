@@ -9,7 +9,7 @@ var height = window.innerHeight
 
 
 
-var rand = d3.randomUniform(-1, 2)
+var rand = d3.randomUniform(-2, 2)
 var randPosX = d3.randomUniform(0, width)
 var randPosY = d3.randomUniform(0, height)
 var flightDuration = 1000
@@ -28,8 +28,8 @@ var keyPressed = false      // true when 'x' is pressed
 function shakeFly(flyN) {
     if (fliesStates[flyN] == "idle") {
         var f = svg.select('[id="' + flyN + '"]').select("svg")
-        var posX = parseInt(f.attr("x"))
-        var posY = parseInt(f.attr("y"))
+        var posX = parseFloat(f.attr("x"))
+        var posY = parseFloat(f.attr("y"))
 
         posX += rand();
         posY += rand();
@@ -47,109 +47,77 @@ function angle(cx, cy, ex, ey) {
     return theta;
 }
 
-function moveFly(flyN) {
+function moveFly(flyN, pos) {
 
-    if (!help) {
+    var f = fliesPosition[flyN];
+    f.x = pos.x
+    f.y = pos.y
+    fliesStates[flyN] = "moving";
 
-        var f = fliesPosition[flyN];
-        f.x = randPosX()
-        f.y = randPosY()
-        fliesStates[flyN] = "moving";
+    var fly = svg.select('[id="' + flyN + '"]');
+    var body = fly.select("svg")            // fly body
+    var oldX = parseFloat(body.attr("x"))
+    var oldY = parseFloat(body.attr("y"))
 
-        var fly = svg.select('[id="' + flyN + '"]');
-        var body = fly.select("svg")            // fly body
-        var oldX = parseFloat(body.attr("x"))
-        var oldY = parseFloat(body.attr("y"))
+    var a = angle(oldX, oldY, f.x, f.y) + 90;
 
-        var a = angle(oldX, oldY, f.x, f.y) + 90;
-
-        fly.transition()
-            .delay(100)
-            .duration(200)
-            .attrTween("transform", () => d3.interpolateString(`rotate(0, ${oldX + 20}, ${oldY + 20})`, `rotate(${a}, ${oldX + 20}, ${oldY + 20})`))
-            .ease(d3.easeLinear)
-            .on("end", function () {
-
-                if (!help) {
-
-                    fly.transition()
-                        .duration(flightDuration)
-                        .ease(d3.easeLinear)
-                        .attrTween("transform", () => d3.interpolateString(
-                            `rotate(${a}, ${oldX + 20}, ${oldY + 20})`,
-                            `rotate(${a}, ${f.x + 20}, ${f.y + 20})`
-                        ))
-                        .select("svg")      // fly body 
-                        .attr("x", f.x)
-                        .attr("y", f.y)
-                        .ease(d3.easeLinear)
-                        .on("end", function () {
-
-                            var newX = parseFloat(body.attr("x"))
-                            var newY = parseFloat(body.attr("y"))
-
-                            fly.transition()
-                                .delay(100)
-                                .duration(200)
-                                .attrTween("transform", () => d3.interpolateString(
-                                    `rotate(${a}, ${newX + 20}, ${newY + 20})`,
-                                    `rotate(0, ${newX + 20}, ${newY + 20})`
-                                ))
-                                .ease(d3.easeLinear)
-                                .on("end", function () {
-                                    fly.attr("transform", null)
-                                    fliesStates[flyN] = "idle";
-                                })
-
-                        })
-
-                }
-            })
-    }
-
-}
-
-function drawChar(c) {
-    console.log("Configurazione: " + c)
-
-
-    nextPos = JSON.parse(JSON.stringify(data.get(c))) // deep copy
-    fliesStates.fill('help')
-
-    var flies = d3.selectAll(".fly")
-
-
-    flies.select("svg")
-        .transition()
+    fly.transition()
         .delay(100)
         .duration(200)
-        .attr("transform", (d, i) => `rotate(${angle(d.x, d.y, nextPos[i].x, nextPos[i].y)}, ${sizeFly}, ${sizeFly}) translate(${sizeFly / 2}, ${sizeFly / 2})`)
+        .attrTween("transform", () => d3.interpolateString(`rotate(0, ${oldX + 20}, ${oldY + 20})`, `rotate(${a}, ${oldX + 20}, ${oldY + 20})`))
         .ease(d3.easeLinear)
         .on("end", function () {
-            fliesPosition = nextPos
-            flies.data(fliesPosition)
-                .transition()
-                .delay(100)
-                .duration(updateTime)
-                .attr("x", (d) => d.x)
-                .attr("y", (d) => d.y)
+
+            fly.transition()
+                .duration(flightDuration)
+                .ease(d3.easeLinear)
+                .attrTween("transform", () => d3.interpolateString(
+                    `rotate(${a}, ${oldX + 20}, ${oldY + 20})`,
+                    `rotate(${a}, ${f.x + 20}, ${f.y + 20})`
+                ))
+                .select("svg")      // fly body 
+                .attr("x", f.x)
+                .attr("y", f.y)
                 .ease(d3.easeLinear)
                 .on("end", function () {
 
-                    flies.select("svg")
-                        .transition()
+                    var newX = parseFloat(body.attr("x"))
+                    var newY = parseFloat(body.attr("y"))
+
+                    fly.transition()
                         .delay(100)
                         .duration(200)
-                        .attr("transform", `rotate(0, ${sizeFly}, ${sizeFly})
-                                            translate(${sizeFly / 2}, ${sizeFly / 2})`)
+                        .attrTween("transform", () => d3.interpolateString(
+                            `rotate(${a}, ${newX + 20}, ${newY + 20})`,
+                            `rotate(0, ${newX + 20}, ${newY + 20})`
+                        ))
                         .ease(d3.easeLinear)
                         .on("end", function () {
-                            fliesStates.fill('idle')
+                            fly.attr("transform", null)
+                            fliesStates[flyN] = "idle";
                         })
 
                 })
 
         })
+
+}
+
+function randomWalk(flyN) {
+    var randPos = {x: randPosX(), y: randPosY()}
+    moveFly(flyN, randPos)
+}
+
+function drawChar(c) {
+    console.log("Configurazione: " + c)
+
+    nextPos = JSON.parse(JSON.stringify(data.get(c))) // deep copy
+    fliesStates.fill('help')
+
+    
+
+
+
 }
 
 function askHelp() {
@@ -233,8 +201,8 @@ d3.json("data/dataset.json")
 
 
         fliesPosition.forEach(function (_, i) {
-            setInterval(() => { if (!help) moveFly(i) }, flyWaitTime());
-        })
+            setInterval(() => { if (!help) randomWalk(i) }, flyWaitTime());
+        }) // TODO: attivazione immediata
 
         setInterval(function () {
             fliesPosition.forEach((_, i) => shakeFly(i))
