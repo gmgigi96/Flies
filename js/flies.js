@@ -12,8 +12,8 @@ var height = window.innerHeight
 var rand = d3.randomUniform(-1, 2)
 var randPosX = d3.randomUniform(0, width)
 var randPosY = d3.randomUniform(0, height)
-var flightDuration = d3.randomInt(1000, 2000)
-var flyWaitTime = d3.randomInt(500, 5000)
+var flightDuration = 1000
+var flyWaitTime = d3.randomInt(flightDuration + 100, 5000)
 var randFly = d3.randomInt(0, 10)
 var randRotation = d3.randomUniform(-1, 1)
 
@@ -27,7 +27,7 @@ var keyPressed = false      // true when 'x' is pressed
 
 function shakeFly(flyN) {
     if (fliesStates[flyN] == "idle") {
-        var f = svg.select('[id="' + flyN + '"]')
+        var f = svg.select('[id="' + flyN + '"]').select("svg")
         var posX = parseInt(f.attr("x"))
         var posY = parseInt(f.attr("y"))
 
@@ -44,7 +44,7 @@ function angle(cx, cy, ex, ey) {
     var theta = Math.atan2(dy, dx);
     theta *= 180 / Math.PI;
     if (theta < 0) theta = 360 + theta; // range [0, 360)
-    return theta + 90;
+    return theta;
 }
 
 function moveFly(flyN) {
@@ -52,52 +52,59 @@ function moveFly(flyN) {
     if (!help) {
 
         var f = fliesPosition[flyN];
-        var oldX = f.x;
-        var oldY = f.y;
-        f.x = randPosX();
-        f.y = randPosY();
-        fliesStates[flyN] = "moving"
+        f.x = randPosX()
+        f.y = randPosY()
+        fliesStates[flyN] = "moving";
 
         var fly = svg.select('[id="' + flyN + '"]');
+        var body = fly.select("svg")            // fly body
+        var oldX = parseFloat(body.attr("x"))
+        var oldY = parseFloat(body.attr("y"))
 
-        var a = angle(oldX, oldY, f.x, f.y)
+        var a = angle(oldX, oldY, f.x, f.y) + 90;
 
-        fly.select("svg")
-            .transition()
+        fly.transition()
             .delay(100)
             .duration(200)
-            .attr("transform", `rotate(${a}, ${sizeFly}, ${sizeFly}) translate(${sizeFly / 2}, ${sizeFly / 2})`)
+            .attrTween("transform", () => d3.interpolateString(`rotate(0, ${oldX + 20}, ${oldY + 20})`, `rotate(${a}, ${oldX + 20}, ${oldY + 20})`))
             .ease(d3.easeLinear)
             .on("end", function () {
 
                 if (!help) {
 
                     fly.transition()
-                        .duration(flightDuration())
+                        .duration(flightDuration)
+                        .ease(d3.easeLinear)
+                        .attrTween("transform", () => d3.interpolateString(
+                            `rotate(${a}, ${oldX + 20}, ${oldY + 20})`,
+                            `rotate(${a}, ${f.x + 20}, ${f.y + 20})`
+                        ))
+                        .select("svg")      // fly body 
                         .attr("x", f.x)
                         .attr("y", f.y)
                         .ease(d3.easeLinear)
-                        .on('end', function () {
+                        .on("end", function () {
 
-                            if (!help) {
+                            var newX = parseFloat(body.attr("x"))
+                            var newY = parseFloat(body.attr("y"))
 
-                                fly.select("svg")
-                                    .transition()
-                                    .delay(100)
-                                    .duration(200)
-                                    .attr("transform", `rotate(0, ${sizeFly}, ${sizeFly})
-                                            translate(${sizeFly / 2}, ${sizeFly / 2})`)
-                                    .ease(d3.easeLinear)
-                                    .on("end", function () {
-                                        fliesStates[flyN] = 'idle'
-                                    })
-                            }
+                            fly.transition()
+                                .delay(100)
+                                .duration(200)
+                                .attrTween("transform", () => d3.interpolateString(
+                                    `rotate(${a}, ${newX + 20}, ${newY + 20})`,
+                                    `rotate(0, ${newX + 20}, ${newY + 20})`
+                                ))
+                                .ease(d3.easeLinear)
+                                .on("end", function () {
+                                    fly.attr("transform", null)
+                                    fliesStates[flyN] = "idle";
+                                })
 
                         })
+
                 }
-
             })
-
     }
 
 }
@@ -120,7 +127,6 @@ function drawChar(c) {
         .ease(d3.easeLinear)
         .on("end", function () {
             fliesPosition = nextPos
-
             flies.data(fliesPosition)
                 .transition()
                 .delay(100)
@@ -194,17 +200,18 @@ d3.json("data/dataset.json")
         fliesPosition = data.get("initial")
 
         flies = d3.select("svg")
-            .selectAll("svg")
+            .selectAll("g")
             .data(fliesPosition)
             .enter()
+            .append("g")
+            .attr("class", "fly")
+            .attr("id", (_, i) => i)
             .append("svg")
             .attr("x", (d) => d.x)
             .attr("y", (d) => d.y)
-            .attr("width", sizeFly * 2)
-            .attr("height", sizeFly * 2)
-            .attr("transform", `translate(${-sizeFly}, ${-sizeFly})`)
-            .attr("class", "fly")
-            .attr("id", (_, i) => i)
+            .attr("width", sizeFly)
+            .attr("height", sizeFly)
+            //.attr("transform", `translate(${-sizeFly}, ${-sizeFly})`)
             .on('mousedown', function () {
                 if (keyPressed && !help) {
                     help = true
@@ -214,14 +221,14 @@ d3.json("data/dataset.json")
 
         d3.xml("data/fly.svg")
             .then(data => {
-                d3.selectAll(".fly").nodes().forEach(n => {
+                d3.selectAll(".fly").select("svg").nodes().forEach(n => {
                     n.append(data.documentElement.cloneNode(true))
                 })
-                d3.selectAll(".fly")
-                    .select("svg")
-                    .attr("width", sizeFly)
-                    .attr("height", sizeFly)
-                    .attr("transform", `translate(${sizeFly / 2}, ${sizeFly / 2})`)
+                // d3.selectAll(".fly")
+                //     .select("svg")
+                //     .attr("width", sizeFly)
+                //     .attr("height", sizeFly)
+                //     .attr("transform", `translate(${sizeFly / 2}, ${sizeFly / 2})`)
             });
 
 
