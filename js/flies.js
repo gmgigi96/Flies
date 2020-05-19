@@ -144,14 +144,13 @@ function askHelp() {
     const interval = setInterval(function h() {
         if (i < s.length) {
             drawChar(s[i])
-            i++
         } else if (i == s.length) {
             drawChar('initial')
-            i++;
         } else {
             help = false;
             clearInterval(interval)
         }
+        i++
         return h
     }(), delayTime);
 
