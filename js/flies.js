@@ -48,6 +48,8 @@ function angle(cx, cy, ex, ey) {
     return theta;
 }
 
+deep_copy = d => JSON.parse(JSON.stringify(d))
+
 function moveFly(flyN, pos, time, considerHelp = true) {
 
     var f = fliesPosition[flyN];
@@ -126,7 +128,7 @@ function randomWalk(flyN) {
 function drawChar(c) {
     console.log("Configurazione: " + c)
 
-    nextPos = JSON.parse(JSON.stringify(data.get(c))) // deep copy
+    nextPos = deep_copy(data.get(c))
     fliesStates.fill('help')
 
     for (let i = 0; i < 10; i++) {
@@ -143,6 +145,9 @@ function askHelp() {
         if (i < s.length) {
             drawChar(s[i])
             i++
+        } else if (i == s.length) {
+            drawChar('initial')
+            i++;
         } else {
             help = false;
             clearInterval(interval)
@@ -180,7 +185,8 @@ d3.json("data/dataset.json")
         data = d3.map(d)            // global variable data which contains flies configurations
         data.each((d) => d.forEach((v, i, a) => (a[i] = { x: v.x * width, y: v.y * height })));
 
-        fliesPosition = data.get("initial")
+        //fliesPosition = data.get("initial")
+        fliesPosition = deep_copy(data.get("initial")) // deep copy
 
         flies = d3.select("svg")
             .selectAll("g")
